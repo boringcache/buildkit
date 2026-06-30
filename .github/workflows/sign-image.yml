@@ -138,7 +138,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ github.token }}
+          password: ${{ secrets.GHCR_PACKAGE_TOKEN || secrets.BOT_PUBLIC_GITHUB_TOKEN || github.token }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.0.0
