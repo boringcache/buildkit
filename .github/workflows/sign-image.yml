@@ -17,8 +17,8 @@ permissions:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  COSIGN_CERTIFICATE_IDENTITY_REGEXP: "^https://github.com/boringcache/.+/.github/workflows/.+@refs/(heads/main|tags/v.+)$"
-  COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+  BC_COSIGN_CERTIFICATE_IDENTITY_REGEXP: "^https://github.com/boringcache/.+/.github/workflows/.+@refs/(heads/main|tags/v.+)$"
+  BC_COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
 
 jobs:
   sign:
@@ -150,8 +150,8 @@ jobs:
         run: |
           set -euo pipefail
           cosign verify \
-            --certificate-identity-regexp "${COSIGN_CERTIFICATE_IDENTITY_REGEXP}" \
-            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --certificate-identity-regexp "${BC_COSIGN_CERTIFICATE_IDENTITY_REGEXP}" \
+            --certificate-oidc-issuer "${BC_COSIGN_OIDC_ISSUER}" \
             "${{ steps.release.outputs.digest_ref }}"
 
       - name: Dispatch public verification
