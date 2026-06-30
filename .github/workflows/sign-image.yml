@@ -41,7 +41,18 @@ jobs:
           fi
 
           image="${IMAGE_REPOSITORY}:${tag}"
-          digest="$(docker buildx imagetools inspect "${image}" | awk '$1 == "Digest:" { print $2; exit }')"
+          token="$(
+            curl -fsSL "https://ghcr.io/token?service=ghcr.io&scope=repository:boringcache/buildkit:pull" |
+              jq -r '.token'
+          )"
+          headers="$(
+            curl -fsSI \
+              -H "Authorization: Bearer ${token}" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
+              "https://ghcr.io/v2/boringcache/buildkit/manifests/${tag}" |
+              tr -d '\r'
+          )"
+          digest="$(printf '%s\n' "${headers}" | awk 'tolower($1) == "docker-content-digest:" { print $2; exit }')"
           if [[ ! "${digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo "Could not resolve immutable digest for ${image}" >&2
             exit 1
