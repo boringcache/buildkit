@@ -21,7 +21,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  COSIGN_CERTIFICATE_IDENTITY_REGEXP: "^https://github.com/boringcache/.+/.github/workflows/.+@refs/(heads/main|tags/v.+)$"
+  COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
   COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
 
 jobs:
@@ -46,9 +46,29 @@ jobs:
             exit 1
           fi
 
+          image="${IMAGE_REPOSITORY}:${tag}"
+          token="$(
+            curl -fsSL "https://ghcr.io/token?service=ghcr.io&scope=repository:boringcache/buildkit:pull" |
+              jq -r '.token'
+          )"
+          headers="$(
+            curl -fsSI \
+              -H "Authorization: Bearer ${token}" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
+              "https://ghcr.io/v2/boringcache/buildkit/manifests/${tag}" |
+              tr -d '\r'
+          )"
+          digest="$(printf '%s\n' "${headers}" | awk 'tolower($1) == "docker-content-digest:" { print $2; exit }')"
+          if [[ ! "${digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "Could not resolve immutable digest for ${image}" >&2
+            exit 1
+          fi
+
           {
             echo "tag=${tag}"
-            echo "image=${IMAGE_REPOSITORY}:${tag}"
+            echo "image=${image}"
+            echo "digest=${digest}"
+            echo "digest_ref=${IMAGE_REPOSITORY}@${digest}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout
@@ -82,26 +102,16 @@ jobs:
       - name: Inspect image
         run: |
           set -euo pipefail
-          image="${{ steps.release.outputs.image }}"
+          image="${{ steps.release.outputs.digest_ref }}"
           docker buildx imagetools inspect "${image}"
-          docker buildx imagetools inspect --raw "${image}" > image-index.json
-          jq -e '
-            [.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "amd64")] | length == 1
-          ' image-index.json >/dev/null
-          jq -e '
-            [.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64")] | length == 1
-          ' image-index.json >/dev/null
-          jq -e '
-            [.manifests[]? | select(
-              .annotations["vnd.docker.reference.type"] == "attestation-manifest" or
-              (.platform.os == "unknown" and .platform.architecture == "unknown")
-            )] | length > 0
-          ' image-index.json >/dev/null
+          bash .github/scripts/verify-buildkit-attestations \
+            "${image}" \
+            "${IMAGE_REPOSITORY}"
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ${{ steps.release.outputs.image }}
+          image-ref: ${{ steps.release.outputs.digest_ref }}
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
@@ -115,7 +125,7 @@ jobs:
       - name: Enforce vulnerability gate
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ${{ steps.release.outputs.image }}
+          image-ref: ${{ steps.release.outputs.digest_ref }}
           format: table
           exit-code: "1"
           severity: HIGH,CRITICAL
@@ -128,6 +138,6 @@ jobs:
         run: |
           set -euo pipefail
           cosign verify \
-            --certificate-identity-regexp "${COSIGN_CERTIFICATE_IDENTITY_REGEXP}" \
+            --certificate-identity "${COSIGN_CERTIFICATE_IDENTITY}" \
             --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
-            "${{ steps.release.outputs.image }}"
+            "${{ steps.release.outputs.digest_ref }}"

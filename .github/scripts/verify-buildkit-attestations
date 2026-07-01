@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+image_ref="${1:?Usage: .github/scripts/verify-buildkit-attestations IMAGE_REF [IMAGE_REPOSITORY]}"
+repository="${2:-}"
+
+if [[ -z "$repository" ]]; then
+  if [[ "$image_ref" == *@sha256:* ]]; then
+    repository="${image_ref%@sha256:*}"
+  else
+    slash_index="${image_ref##*/}"
+    if [[ "$slash_index" == *:* ]]; then
+      repository="${image_ref%:*}"
+    else
+      repository="$image_ref"
+    fi
+  fi
+fi
+
+tmp_dir="$(mktemp -d -t bc-buildkit-attestations.XXXXXX)"
+cleanup() {
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
+
+index_file="$tmp_dir/image-index.json"
+platforms_file="$tmp_dir/platforms.tsv"
+
+docker buildx imagetools inspect --raw "$image_ref" > "$index_file"
+
+jq -r '
+  .manifests[]? |
+  select(.platform.os == "linux" and (.platform.architecture == "amd64" or .platform.architecture == "arm64")) |
+  [.platform.architecture, .digest] |
+  @tsv
+' "$index_file" > "$platforms_file"
+
+platform_count="$(wc -l < "$platforms_file" | tr -d ' ')"
+if [[ "$platform_count" != "2" ]]; then
+  echo "BuildKit image must contain exactly linux/amd64 and linux/arm64 manifests." >&2
+  exit 1
+fi
+
+for required_arch in amd64 arm64; do
+  if ! awk -F '\t' -v arch="$required_arch" '$1 == arch { found = 1 } END { exit found ? 0 : 1 }' "$platforms_file"; then
+    echo "BuildKit image is missing linux/${required_arch} manifest." >&2
+    exit 1
+  fi
+done
+
+while IFS=$'\t' read -r arch platform_digest; do
+  attestation_digest="$(
+    jq -r --arg digest "$platform_digest" '
+      [
+        .manifests[]? |
+        select(
+          .annotations["vnd.docker.reference.type"] == "attestation-manifest" and
+          .annotations["vnd.docker.reference.digest"] == $digest
+        ) |
+        .digest
+      ] |
+      if length == 1 then .[0] else empty end
+    ' "$index_file"
+  )"
+
+  if [[ -z "$attestation_digest" ]]; then
+    echo "BuildKit image is missing a single attestation manifest for linux/${arch}." >&2
+    exit 1
+  fi
+
+  attestation_file="$tmp_dir/attestation-${arch}.json"
+  docker buildx imagetools inspect --raw "${repository}@${attestation_digest}" > "$attestation_file"
+
+  jq -e '
+    [
+      .layers[]? |
+      select(.mediaType == "application/vnd.in-toto+json") |
+      .annotations["in-toto.io/predicate-type"]
+    ] as $types |
+    ($types | index("https://spdx.dev/Document")) and
+    ($types | index("https://slsa.dev/provenance/v1"))
+  ' "$attestation_file" >/dev/null || {
+    echo "BuildKit image attestation for linux/${arch} must include SPDX SBOM and SLSA provenance predicates." >&2
+    exit 1
+  }
+done < "$platforms_file"
+
+echo "Verified BuildKit image platforms, SPDX SBOM attestations, and SLSA provenance attestations for ${image_ref}."

@@ -4,8 +4,7 @@ This is the public distribution surface for the managed BuildKit image used by
 BoringCache.
 
 The repository is intentionally thin. It tracks image tags, signing,
-verification, and release metadata; it is not a source mirror, image builder, or
-standalone BuildKit fork.
+verification, and release metadata for the managed image.
 
 ## Image
 
@@ -21,18 +20,17 @@ Tags follow upstream BuildKit versions with a BoringCache patch suffix:
   base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
 
-The image is intended for BoringCache-managed builders and is not a standalone
-replacement for upstream BuildKit.
+This image is the BoringCache managed builder image used by the BoringCache CLI
+and `boringcache/one`.
 
 ## Releases
 
 Release tags correspond to managed BuildKit images for Linux `amd64` and
 `arm64`.
 
-Release images are built from BoringCache's private monorepo source, then this
-public repository signs and verifies the already-published digest. Every release
-image is published with provenance/SBOM attestations, scanned for HIGH/CRITICAL
-vulnerabilities, and signed by digest with Sigstore/cosign.
+Every release image is published with provenance/SBOM attestations, scanned for
+HIGH/CRITICAL vulnerabilities, and signed by digest with Sigstore/cosign. This
+public repository signs and verifies the promoted image digest.
 
 Inspect the image:
 
@@ -43,8 +41,15 @@ docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.1
 Verify the signature:
 
 ```sh
+digest="$(
+  docker buildx imagetools inspect \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.1 \
+    --format '{{json .Manifest.Digest}}' |
+    jq -r .
+)"
+
 cosign verify \
-  --certificate-identity-regexp '^https://github.com/boringcache/.+/.github/workflows/.+@refs/(heads/main|tags/v.+)$' \
+  --certificate-identity 'https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  ghcr.io/boringcache/buildkit:v0.30.0-bc.1
+  "ghcr.io/boringcache/buildkit@${digest}"
 ```

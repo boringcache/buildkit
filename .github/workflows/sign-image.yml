@@ -21,7 +21,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  BC_COSIGN_CERTIFICATE_IDENTITY_REGEXP: "^https://github.com/boringcache/.+/.github/workflows/.+@refs/(heads/main|tags/v.+)$"
+  BC_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
   BC_COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
 
 jobs:
@@ -101,19 +101,9 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx imagetools inspect "${{ steps.release.outputs.digest_ref }}"
-          docker buildx imagetools inspect --raw "${{ steps.release.outputs.digest_ref }}" > image-index.json
-          jq -e '
-            [.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "amd64")] | length == 1
-          ' image-index.json >/dev/null
-          jq -e '
-            [.manifests[]? | select(.platform.os == "linux" and .platform.architecture == "arm64")] | length == 1
-          ' image-index.json >/dev/null
-          jq -e '
-            [.manifests[]? | select(
-              .annotations["vnd.docker.reference.type"] == "attestation-manifest" or
-              (.platform.os == "unknown" and .platform.architecture == "unknown")
-            )] | length > 0
-          ' image-index.json >/dev/null
+          bash .github/scripts/verify-buildkit-attestations \
+            "${{ steps.release.outputs.digest_ref }}" \
+            "${IMAGE_REPOSITORY}"
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -155,7 +145,7 @@ jobs:
         run: |
           set -euo pipefail
           cosign verify \
-            --certificate-identity-regexp "${BC_COSIGN_CERTIFICATE_IDENTITY_REGEXP}" \
+            --certificate-identity "${BC_COSIGN_CERTIFICATE_IDENTITY}" \
             --certificate-oidc-issuer "${BC_COSIGN_OIDC_ISSUER}" \
             "${{ steps.release.outputs.digest_ref }}"
 
