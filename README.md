@@ -10,6 +10,9 @@ BoringCache.
 The repository is intentionally thin. It tracks image tags, signing,
 verification, and release metadata for the managed image.
 
+Report security issues privately through
+[GitHub private vulnerability reporting](https://github.com/boringcache/buildkit/security/advisories/new).
+
 ## Image
 
 ```text
