@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: buildkit-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
+  BUILDKIT_IMAGE_TAG: v0.30.0-bc.1
+  COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
+  COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+
+jobs:
+  trust:
+    name: Trust Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check shell helpers
+        run: bash -n .github/scripts/verify-buildkit-attestations
+
+      - name: Check public repo guardrails
+        run: |
+          set -euo pipefail
+
+          stale=0
+          while IFS= read -r file; do
+            case "${file}" in
+              .github/workflows/ci.yml) continue ;;
+            esac
+
+            if grep -nE 'certificate-identity-regexp|private monorepo|source mirror|standalone replacement|df4cb1c069e1874edd31b4311f1884172cec0e10|faadad0cce49287aee09b3a48701e75088a2c6ad' "${file}"; then
+              stale=1
+            fi
+          done < <(git ls-files README.md .github)
+
+          if [[ "${stale}" -ne 0 ]]; then
+            echo "Found stale public BuildKit metadata." >&2
+            exit 1
+          fi
+
+          grep -R "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0" .github/workflows
+          grep -R "sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2" .github/workflows
+
+      - name: Resolve promoted image digest
+        id: image
+        run: |
+          set -euo pipefail
+          digest="$(
+            docker buildx imagetools inspect \
+              "${IMAGE_REPOSITORY}:${BUILDKIT_IMAGE_TAG}" \
+              --format '{{json .Manifest.Digest}}' |
+              jq -r .
+          )"
+
+          if [[ ! "${digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "Could not resolve immutable digest for ${IMAGE_REPOSITORY}:${BUILDKIT_IMAGE_TAG}" >&2
+            exit 1
+          fi
+
+          echo "digest_ref=${IMAGE_REPOSITORY}@${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify promoted image attestations
+        run: |
+          .github/scripts/verify-buildkit-attestations \
+            "${{ steps.image.outputs.digest_ref }}" \
+            "${IMAGE_REPOSITORY}"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Verify promoted image signature
+        run: |
+          cosign verify \
+            --certificate-identity "${COSIGN_CERTIFICATE_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            "${{ steps.image.outputs.digest_ref }}"
