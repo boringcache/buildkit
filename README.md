@@ -36,6 +36,10 @@ Every release image is published with provenance/SBOM attestations, scanned for
 HIGH/CRITICAL vulnerabilities, and signed by digest with Sigstore/cosign. This
 public repository signs and verifies the promoted image digest.
 
+The signed Git release tag also records the image tag and immutable digest. The
+signing and verification workflows compare that signed metadata with GHCR before
+trusting the image.
+
 Inspect the image:
 
 ```sh

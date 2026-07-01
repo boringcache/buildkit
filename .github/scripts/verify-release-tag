@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tag="${1:?tag is required}"
+expected_image="${2:?expected image is required}"
+expected_digest="${3:?expected digest is required}"
+
+if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-bc\.[0-9]+$ ]]; then
+  echo "BuildKit release tag must look like vX.Y.Z-bc.N, got ${tag}" >&2
+  exit 1
+fi
+
+if [[ ! "${expected_digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+  echo "BuildKit image digest must be immutable, got ${expected_digest}" >&2
+  exit 1
+fi
+
+git fetch --force --tags origin "refs/tags/${tag}:refs/tags/${tag}"
+if [[ "$(git cat-file -t "${tag}" 2>/dev/null || true)" != "tag" ]]; then
+  echo "Release tag ${tag} must be an annotated signed tag object." >&2
+  exit 1
+fi
+
+allowed_signers="${RUNNER_TEMP:-/tmp}/release_allowed_signers"
+printf '%s\n' \
+  'gaurav@gauravtiwari.co.uk ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILVC6w5HTvW0TZwuN0/J3axNnAfNclejNgpCWs0b2KAM' \
+  'gaurav@gauravtiwari.co.uk ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDD+KK3nI9HuQIJobaOc/nsgno1fjS/04Usro4VXGduHBRmdUUQN0OgM70X4L3Jc0cddgWb2MxzDeM+aF5GPU2Rv2qwEnuLbSzfO23f6b3+9CJ8JsiU05tsmsaaAvVywQ+sTO4NNbQj9xY0JU2mvnhBEee+UvO7vZtu3z72JH4O8YssLThzGw/bNoSumASHOxOKe2oEFtIM6Rnazzv4SoX7I8rmMRPUss62cu4jAKkl5Gz5Vjol/E8j23SNJQpptYX28ayM/wVVD57tC+vBeGFn/7utjmpBMyQchEFRL+UW0I3BAtgDhCW/IgdXThswjvU81FmiiV2c6W9b7+2e0HVEg7bnLG5Qs+L/mSAD2ZqXmRu1hgM3MtJWY8VTnrwRRZjmOiVuf+V7+81+dz83BVuKB2D8Re0ECSGS+paBtrL7ZUAHi8HD1xxZ8J31oUxQMMfTC8Y0zlll1jK660MpJpK69sTGQI524H1V6S7KkuLu5saa5QdciRRzRkBWNMVBk6M=' \
+  > "${allowed_signers}"
+
+git \
+  -c gpg.format=ssh \
+  -c gpg.ssh.allowedSignersFile="${allowed_signers}" \
+  tag -v "${tag}"
+
+tag_body="$(git cat-file tag "${tag}" | sed '/^-----BEGIN SSH SIGNATURE-----$/,$d')"
+tag_image="$(printf '%s\n' "${tag_body}" | sed -n 's/^image: //p' | head -1)"
+tag_digest="$(printf '%s\n' "${tag_body}" | sed -n 's/^image-digest: //p' | head -1)"
+
+if [[ "${tag_image}" != "${expected_image}" ]]; then
+  echo "Release tag ${tag} is signed for image ${tag_image:-<missing>}, not ${expected_image}." >&2
+  exit 1
+fi
+
+if [[ "${tag_digest}" != "${expected_digest}" ]]; then
+  echo "Release tag ${tag} is signed for digest ${tag_digest:-<missing>}, not ${expected_digest}." >&2
+  exit 1
+fi
+
+echo "Verified signed release tag ${tag} binds ${expected_image} to ${expected_digest}."
