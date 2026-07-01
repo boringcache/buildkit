@@ -3,8 +3,9 @@
 This is the public distribution surface for the managed BuildKit image used by
 BoringCache.
 
-The repository is intentionally thin. It tracks image tags, verification, and
-release metadata; it is not a source mirror or a standalone BuildKit fork.
+The repository is intentionally thin. It tracks image tags, signing,
+verification, and release metadata; it is not a source mirror, image builder, or
+standalone BuildKit fork.
 
 ## Image
 
@@ -28,8 +29,10 @@ replacement for upstream BuildKit.
 Release tags correspond to managed BuildKit images for Linux `amd64` and
 `arm64`.
 
-Every release image is published with provenance/SBOM attestations, scanned for
-HIGH/CRITICAL vulnerabilities, and signed by digest with Sigstore/cosign.
+Release images are built from BoringCache's private monorepo source, then this
+public repository signs and verifies the already-published digest. Every release
+image is published with provenance/SBOM attestations, scanned for HIGH/CRITICAL
+vulnerabilities, and signed by digest with Sigstore/cosign.
 
 Inspect the image:
 
