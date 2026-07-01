@@ -31,6 +31,13 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Checkout verification helpers
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: main
+          path: verifier
+          persist-credentials: false
+
       - name: Resolve tag
         id: release
         run: |
@@ -76,9 +83,11 @@ jobs:
         with:
           ref: ${{ steps.release.outputs.tag }}
           fetch-depth: 0
+          path: release-metadata
           persist-credentials: false
 
       - name: Verify signed release tag
+        working-directory: release-metadata
         run: |
           set -euo pipefail
           tag="${{ steps.release.outputs.tag }}"
@@ -104,7 +113,7 @@ jobs:
           set -euo pipefail
           image="${{ steps.release.outputs.digest_ref }}"
           docker buildx imagetools inspect "${image}"
-          bash .github/scripts/verify-buildkit-attestations \
+          bash verifier/.github/scripts/verify-buildkit-attestations \
             "${image}" \
             "${IMAGE_REPOSITORY}"
 
