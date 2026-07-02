@@ -20,7 +20,7 @@ image tags:
 
 - `ghcr.io/boringcache/buildkit:latest`
 - `ghcr.io/boringcache/buildkit:v0.30.0-bc`
-- `ghcr.io/boringcache/buildkit:v0.30.0-bc.1`
+- `ghcr.io/boringcache/buildkit:v0.30.0-bc.2`
 
 Older tags may be superseded by a new promoted image instead of receiving a
 backport.

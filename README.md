@@ -16,12 +16,12 @@ Report security issues privately through
 ## Image
 
 ```text
-ghcr.io/boringcache/buildkit:v0.30.0-bc.1
+ghcr.io/boringcache/buildkit:v0.30.0-bc.2
 ```
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.1` is upstream BuildKit `v0.30.0` plus BoringCache patch release
+- `v0.30.0-bc.2` is upstream BuildKit `v0.30.0` plus BoringCache patch release
   `1`.
 - `v0.30.0-bc` moves to the latest BoringCache patch release for that upstream
   base.
@@ -46,7 +46,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.1
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.2
 ```
 
 Verify the signature:
@@ -54,7 +54,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.1 \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.2 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
