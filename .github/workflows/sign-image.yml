@@ -145,6 +145,32 @@ jobs:
             --certificate-oidc-issuer "${BC_COSIGN_OIDC_ISSUER}" \
             "${{ steps.release.outputs.digest_ref }}"
 
+      - name: Promote managed channel tags
+        run: |
+          set -euo pipefail
+          tag="${{ steps.release.outputs.tag }}"
+          base="${tag%-bc.*}"
+          channel="${base}-bc"
+          digest="${{ steps.release.outputs.digest }}"
+
+          docker buildx imagetools create \
+            -t "${IMAGE_REPOSITORY}:${channel}" \
+            -t "${IMAGE_REPOSITORY}:latest" \
+            "${{ steps.release.outputs.digest_ref }}"
+
+          for promoted_tag in "${channel}" latest; do
+            promoted_digest="$(
+              docker buildx imagetools inspect \
+                "${IMAGE_REPOSITORY}:${promoted_tag}" \
+                --format '{{json .Manifest.Digest}}' |
+                jq -r .
+            )"
+            if [[ "${promoted_digest}" != "${digest}" ]]; then
+              echo "Promoted ${IMAGE_REPOSITORY}:${promoted_tag} resolved ${promoted_digest}, expected ${digest}." >&2
+              exit 1
+            fi
+          done
+
       - name: Dispatch public verification
         env:
           GH_TOKEN: ${{ github.token }}

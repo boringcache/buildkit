@@ -16,15 +16,15 @@ Report security issues privately through
 ## Image
 
 ```text
-ghcr.io/boringcache/buildkit:v0.30.0-bc.3
+ghcr.io/boringcache/buildkit:v0.30.0-bc
 ```
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.3` is upstream BuildKit `v0.30.0` plus BoringCache patch release
+- `v0.30.0-bc.4` is upstream BuildKit `v0.30.0` plus BoringCache patch release
   `3`.
-- `v0.30.0-bc` moves to the latest BoringCache patch release for that upstream
-  base.
+- `v0.30.0-bc` is the managed stable channel for the latest signed BoringCache
+  patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
 
 This image is the BoringCache managed builder image used by the BoringCache CLI
@@ -35,9 +35,10 @@ and `boringcache/one`.
 Release tags correspond to managed BuildKit images for Linux `amd64` and
 `arm64`.
 
-Every release image is published with provenance/SBOM attestations, scanned for
-HIGH/CRITICAL vulnerabilities, and signed by digest with Sigstore/cosign. This
-public repository signs and verifies the promoted image digest.
+Every exact release image is published with provenance/SBOM attestations,
+scanned for HIGH/CRITICAL vulnerabilities, and signed by digest with
+Sigstore/cosign. This public repository signs and verifies the exact image
+digest before promoting `v0.30.0-bc` and `latest` to that digest.
 
 The signed Git release tag also records the image tag and immutable digest. The
 signing and verification workflows compare that signed metadata with GHCR before
@@ -46,7 +47,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.3
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.4
 ```
 
 Verify the signature:
@@ -54,7 +55,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.3 \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.4 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
