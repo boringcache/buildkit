@@ -21,7 +21,7 @@ ghcr.io/boringcache/buildkit:v0.30.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.4` is upstream BuildKit `v0.30.0` plus BoringCache patch release
+- `v0.30.0-bc.5` is upstream BuildKit `v0.30.0` plus BoringCache patch release
   `3`.
 - `v0.30.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
@@ -47,7 +47,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.4
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.5
 ```
 
 Verify the signature:
@@ -55,7 +55,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.4 \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.5 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
