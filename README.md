@@ -21,10 +21,12 @@ ghcr.io/boringcache/buildkit:v0.30.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.10` is upstream BuildKit `v0.30.0` plus BoringCache patch release
-  `10`. It graduates the ordinary managed `type=boringcache` exporter with
-  concurrent body preparation and resilient lazy restore. State, mount-cache,
-  tool-cache, and speculative prefetch paths remain opt-in.
+- `v0.30.0-bc.11` is upstream BuildKit `v0.30.0` plus BoringCache patch release
+  `11`. It keeps the ordinary managed `type=boringcache` exporter as the sole
+  managed layer-cache path, removes the discontinued state experiment, reuses
+  destination-present bodies before opening their providers, and governs
+  concurrent body preparation with solve-aware CPU and I/O pressure. Cache-mount,
+  tool-cache, and speculative prefetch paths remain separate opt-ins.
 - `v0.30.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
@@ -49,7 +51,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.10
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.11
 ```
 
 Verify the signature:
@@ -57,7 +59,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.10 \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.11 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
