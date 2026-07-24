@@ -21,12 +21,12 @@ ghcr.io/boringcache/buildkit:v0.30.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.13` is upstream BuildKit `v0.30.0` plus BoringCache patch release
-  `13`. It keeps the ordinary managed `type=boringcache` exporter as the sole
-  managed layer-cache path and makes the opt-in cache-mount offloader restore
-  only mounts required by an executed cache miss, skip reliable no-write saves,
-  and avoid republishing unchanged archives. Tool-cache and speculative
-  prefetch paths remain separate opt-ins.
+- `v0.30.0-bc.14` is upstream BuildKit `v0.30.0` plus BoringCache patch release
+  `14`. It keeps the ordinary managed `type=boringcache` exporter as the sole
+  managed layer-cache path and coalesces immutable body uploads shared by
+  concurrent Bake exporters while preserving each target's independent cache
+  manifest. Cache-mount, tool-cache, and speculative prefetch paths remain
+  separate opt-ins.
 - `v0.30.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
@@ -51,7 +51,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.13
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.14
 ```
 
 Verify the signature:
@@ -59,7 +59,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.13 \
+    ghcr.io/boringcache/buildkit:v0.30.0-bc.14 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"

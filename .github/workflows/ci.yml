@@ -17,7 +17,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  BUILDKIT_IMAGE_TAG: v0.30.0-bc.13
+  BUILDKIT_IMAGE_TAG: v0.30.0-bc.14
   COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
   COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
 
