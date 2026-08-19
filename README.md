@@ -16,19 +16,18 @@ Report security issues privately through
 ## Image
 
 ```text
-ghcr.io/boringcache/buildkit:v0.30.0-bc
+ghcr.io/boringcache/buildkit:v0.32.2-bc
 ```
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.30.0-bc.17` is upstream BuildKit `v0.30.0` plus BoringCache patch release
-  `17`. It retains the ordinary managed `type=boringcache` layer-cache path,
-  concurrent Bake upload coalescing, and Rust-worker cache-mount archives with
-  bounded fail-closed write evidence. Directly wrapped `private` and `locked`
-  mounts now publish before their snapshots are released, and worker receipts
-  report the encoded archive size. Cache-mount, tool-cache, and speculative
-  prefetch paths remain separate opt-ins.
-- `v0.30.0-bc` is the managed stable channel for the latest signed BoringCache
+- `v0.32.2-bc.1` is upstream BuildKit `v0.32.2` plus BoringCache patch release
+  `1`. It retains the managed `type=boringcache` layer-cache path, concurrent
+  Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
+  updates `github.com/moby/go-archive` to 0.3.0 so tar extraction cannot escape
+  its destination (CVE-2026-17106), and `golang.org/x/mod` to 0.40.0 for
+  CVE-2026-56864 and CVE-2026-56865.
+- `v0.32.2-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
 
@@ -43,7 +42,7 @@ Release tags correspond to managed BuildKit images for Linux `amd64` and
 Every exact release image is published with provenance/SBOM attestations,
 scanned for HIGH/CRITICAL vulnerabilities, and signed by digest with
 Sigstore/cosign. This public repository signs and verifies the exact image
-digest before promoting `v0.30.0-bc` and `latest` to that digest.
+digest before promoting `v0.32.2-bc` and `latest` to that digest.
 
 The signed Git release tag also records the image tag and immutable digest. The
 signing and verification workflows compare that signed metadata with GHCR before
@@ -52,7 +51,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.30.0-bc.17
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.32.2-bc.1
 ```
 
 Verify the signature:
@@ -60,7 +59,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.30.0-bc.17 \
+    ghcr.io/boringcache/buildkit:v0.32.2-bc.1 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"

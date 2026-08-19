@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "BoringCache BuildKit tag, for example v0.30.0-bc.17"
+        description: "BoringCache BuildKit tag, for example v0.32.2-bc.1"
         required: true
         type: string
 
