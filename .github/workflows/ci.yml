@@ -43,6 +43,9 @@ jobs:
         run: |
           set -euo pipefail
 
+          test -s .github/SECURITY.md
+          grep -Fq 'security@boringcache.com' .github/SECURITY.md
+
           stale=0
           while IFS= read -r file; do
             case "${file}" in

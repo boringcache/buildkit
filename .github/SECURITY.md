@@ -5,7 +5,8 @@
 Please do not open a public issue or pull request for a potential security
 vulnerability.
 
-Use GitHub's private vulnerability reporting for this repository:
+Email [security@boringcache.com](mailto:security@boringcache.com) or use
+GitHub's private vulnerability reporting for this repository:
 
 https://github.com/boringcache/buildkit/security/advisories/new
 
@@ -32,5 +33,10 @@ distribution surface: image publication, signing, verification, release
 metadata, attestations, and vulnerabilities present in the published image.
 
 If a report concerns upstream BuildKit itself and is not specific to the
-BoringCache managed image, please also consider the upstream BuildKit security
-process.
+BoringCache managed image, please use the
+[upstream BuildKit security process](https://github.com/moby/buildkit/security/policy)
+as well.
+
+For service, website, account, Artifact, Registry, or other product reports,
+use [security@boringcache.com](mailto:security@boringcache.com) or the
+[BoringCache security policy](https://boringcache.com/security).
