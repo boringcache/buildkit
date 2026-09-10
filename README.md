@@ -21,11 +21,13 @@ ghcr.io/boringcache/buildkit:v0.33.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.33.0-bc.1` is upstream BuildKit `v0.33.0` plus BoringCache patch release
-  `1`. It retains the managed `type=boringcache` layer-cache path, concurrent
+- `v0.33.0-bc.2` is upstream BuildKit `v0.33.0` plus BoringCache patch release
+  `2`. It retains the managed `type=boringcache` layer-cache path, concurrent
   Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
   retains the tar extraction containment and dependency security fixes, and
-  fixes a race between solver request cancellation and finalization.
+  fixes a race between solver request cancellation and finalization. Cache-mount
+  archives use stable, readable mount names across workers; archives under
+  previous mount names are not selected by the new names.
 - `v0.33.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
@@ -50,7 +52,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.0-bc.1
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.0-bc.2
 ```
 
 Verify the signature:
@@ -58,7 +60,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.33.0-bc.1 \
+    ghcr.io/boringcache/buildkit:v0.33.0-bc.2 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"

@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "open3"
+reference, identity = ARGV
+abort "An immutable image and an HTTPS workflow identity are required." unless /\Aghcr\.io\/boringcache\/(?:base|buildkit)@sha256:[0-9a-f]{64}\z/.match?(reference.to_s) && /\Ahttps:\/\/github\.com\/boringcache\/[a-z-]+\/\.github\/workflows\/[a-z-]+\.yml@refs\/heads\/main\z/.match?(identity.to_s)
+_, errors, status = Open3.capture3("cosign", "verify", "--certificate-identity", identity,
+  "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com", reference)
+if status.success?
+  puts "verified"
+elsif errors.match?(/no signatures found/i) && !errors.match?(/unauthorized|denied|forbidden|timeout|connection|certificate|no matching signatures/i)
+  puts "absent"
+else
+  abort "Image signature verification failed; signature absence was not established."
+end

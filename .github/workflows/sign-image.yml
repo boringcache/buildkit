@@ -1,10 +1,11 @@
 name: Sign BuildKit Image
+run-name: Sign BuildKit Image / ${{ inputs.tag }}
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "BoringCache BuildKit tag, for example v0.33.0-bc.1"
+        description: "BoringCache BuildKit tag, for example v0.33.0-bc.2"
         required: true
         type: string
 
@@ -16,7 +17,7 @@ permissions:
   security-events: write
 
 concurrency:
-  group: buildkit-sign-${{ inputs.tag }}
+  group: buildkit-sign
   cancel-in-progress: false
 
 env:
@@ -43,9 +44,11 @@ jobs:
 
       - name: Resolve image
         id: release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ inputs.tag }}"
+          tag="${RELEASE_TAG}"
           if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-bc\.[0-9]+$ ]]; then
             echo "BuildKit image tag must look like vX.Y.Z-bc.N, got ${tag}" >&2
             exit 1
@@ -135,7 +138,11 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Sign image
-        run: cosign sign --yes "${{ steps.release.outputs.digest_ref }}"
+        env:
+          DIGEST_REF: ${{ steps.release.outputs.digest_ref }}
+        run: |
+          state="$(ruby verifier/.github/scripts/image-signature-state "${DIGEST_REF}" "${BC_COSIGN_CERTIFICATE_IDENTITY}")"
+          if [[ "${state}" == absent ]]; then cosign sign --yes "${DIGEST_REF}"; fi
 
       - name: Verify signature
         run: |
@@ -153,12 +160,18 @@ jobs:
           channel="${base}-bc"
           digest="${{ steps.release.outputs.digest }}"
 
-          docker buildx imagetools create \
-            -t "${IMAGE_REPOSITORY}:${channel}" \
-            -t "${IMAGE_REPOSITORY}:latest" \
-            "${{ steps.release.outputs.digest_ref }}"
+          newest="$(git -C release-metadata tag --list 'v*-bc.*' --sort=-version:refname | sed -n '1p')"
+          if [[ "${newest}" != "${tag}" ]]; then
+            echo "A newer release tag exists; this retry leaves managed channels unchanged."
+            exit 0
+          fi
 
           for promoted_tag in "${channel}" latest; do
+            current="$(ruby verifier/.github/scripts/image-state "${IMAGE_REPOSITORY}:${promoted_tag}")"
+            if [[ "${current}" != "${digest}" ]]; then
+              docker buildx imagetools create --prefer-index=false \
+                -t "${IMAGE_REPOSITORY}:${promoted_tag}" "${{ steps.release.outputs.digest_ref }}"
+            fi
             promoted_digest="$(
               docker buildx imagetools inspect \
                 "${IMAGE_REPOSITORY}:${promoted_tag}" \
@@ -170,12 +183,3 @@ jobs:
               exit 1
             fi
           done
-
-      - name: Dispatch public verification
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run verify-image.yml \
-            --repo boringcache/buildkit \
-            --ref main \
-            -f "tag=${{ steps.release.outputs.tag }}"

@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "open3"
+require "json"
+reference = ARGV.fetch(0)
+abort "An exact BoringCache image tag is required." unless /\Aghcr\.io\/boringcache\/(?:base|buildkit):[A-Za-z0-9._-]+\z/.match?(reference)
+output, errors, status = Open3.capture3("docker", "buildx", "imagetools", "inspect", reference, "--format", "{{json .Manifest.Digest}}")
+if status.success?
+  digest = JSON.parse(output)
+  abort "Image inspection returned no immutable digest." unless /\Asha256:[0-9a-f]{64}\z/.match?(digest.to_s)
+  puts digest
+elsif errors.match?(/manifest unknown|#{Regexp.escape(reference)}: not found\s*$/i) && !errors.match?(/unauthorized|denied|forbidden|timeout|connection/i)
+  puts "absent"
+else
+  abort "Image lookup failed; absence was not established."
+end
