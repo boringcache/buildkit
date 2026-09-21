@@ -5,14 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "BoringCache BuildKit tag, for example v0.33.0-bc.2"
+        description: "BoringCache BuildKit tag, for example v0.33.0-bc.4"
         required: true
         type: string
 
 permissions:
   actions: write
   contents: read
-  id-token: write
   packages: write
   security-events: write
 
@@ -22,14 +21,14 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  BC_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
-  BC_COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+  BC_COSIGN_PUBLIC_KEY: verifier/.github/release-cosign-v1.pub
 
 jobs:
   sign:
     name: Sign Image
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    environment: release
 
     steps:
       - name: Set up Docker Buildx
@@ -131,25 +130,35 @@ jobs:
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+          username: ${{ vars.GHCR_PACKAGE_USERNAME || github.actor }}
+          password: ${{ secrets.GHCR_PACKAGE_TOKEN }}
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Sign image
         env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_RELEASE_PASSWORD }}
+          COSIGN_RELEASE_PRIVATE_KEY: ${{ secrets.COSIGN_RELEASE_PRIVATE_KEY }}
           DIGEST_REF: ${{ steps.release.outputs.digest_ref }}
         run: |
-          state="$(ruby verifier/.github/scripts/image-signature-state "${DIGEST_REF}" "${BC_COSIGN_CERTIFICATE_IDENTITY}")"
-          if [[ "${state}" == absent ]]; then cosign sign --yes "${DIGEST_REF}"; fi
+          set -euo pipefail
+          if [[ -z "${COSIGN_RELEASE_PRIVATE_KEY}" || -z "${COSIGN_PASSWORD}" ]]; then
+            echo "The protected Cosign release key and password are required." >&2
+            exit 1
+          fi
+          signing_key="${RUNNER_TEMP}/release-cosign-v1.key"
+          printf '%s\n' "${COSIGN_RELEASE_PRIVATE_KEY}" > "${signing_key}"
+          chmod 600 "${signing_key}"
+          trap 'rm -f "${signing_key}"' EXIT
+          state="$(ruby verifier/.github/scripts/image-signature-state "${DIGEST_REF}" "${BC_COSIGN_PUBLIC_KEY}")"
+          if [[ "${state}" == absent ]]; then cosign sign --yes --key "${signing_key}" "${DIGEST_REF}"; fi
 
       - name: Verify signature
         run: |
           set -euo pipefail
           cosign verify \
-            --certificate-identity "${BC_COSIGN_CERTIFICATE_IDENTITY}" \
-            --certificate-oidc-issuer "${BC_COSIGN_OIDC_ISSUER}" \
+            --key "${BC_COSIGN_PUBLIC_KEY}" \
             "${{ steps.release.outputs.digest_ref }}"
 
       - name: Promote managed channel tags

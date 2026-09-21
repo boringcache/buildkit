@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "BoringCache BuildKit tag, for example v0.33.0-bc.2"
+        description: "BoringCache BuildKit tag, for example v0.33.0-bc.4"
         required: true
         type: string
 
@@ -22,8 +22,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  COSIGN_CERTIFICATE_IDENTITY: "https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main"
-  COSIGN_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+  COSIGN_PUBLIC_KEY: verifier/.github/release-cosign-v1.pub
 
 jobs:
   verify:
@@ -135,6 +134,5 @@ jobs:
         run: |
           set -euo pipefail
           cosign verify \
-            --certificate-identity "${COSIGN_CERTIFICATE_IDENTITY}" \
-            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --key "${COSIGN_PUBLIC_KEY}" \
             "${{ steps.release.outputs.digest_ref }}"

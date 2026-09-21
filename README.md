@@ -21,13 +21,18 @@ ghcr.io/boringcache/buildkit:v0.33.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.33.0-bc.2` is upstream BuildKit `v0.33.0` plus BoringCache patch release
-  `2`. It retains the managed `type=boringcache` layer-cache path, concurrent
+- `v0.33.0-bc.4` is upstream BuildKit `v0.33.0` plus BoringCache patch release
+  `4`. It retains the managed `type=boringcache` layer-cache path, concurrent
   Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
   retains the tar extraction containment and dependency security fixes, and
   fixes a race between solver request cancellation and finalization. Cache-mount
   archives use stable, readable mount names across workers; archives under
-  previous mount names are not selected by the new names.
+  previous mount names are not selected by the new names. One daemon-wide
+  limit admits one to four cache-mount archive worker processes from the
+  BuildKit CPU budget and reports active, queued, peak, and wait metrics.
+  Cache mounts can be addressed by their own namespace instead of the layer
+  tag, and a namespaced mount is published merge-safely against the snapshot
+  the publisher merged.
 - `v0.33.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
@@ -52,7 +57,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.0-bc.2
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.0-bc.4
 ```
 
 Verify the signature:
@@ -60,7 +65,7 @@ Verify the signature:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.33.0-bc.2 \
+    ghcr.io/boringcache/buildkit:v0.33.0-bc.4 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"

@@ -2,10 +2,18 @@
 # frozen_string_literal: true
 
 require "open3"
-reference, identity = ARGV
-abort "An immutable image and an HTTPS workflow identity are required." unless /\Aghcr\.io\/boringcache\/(?:base|buildkit)@sha256:[0-9a-f]{64}\z/.match?(reference.to_s) && /\Ahttps:\/\/github\.com\/boringcache\/[a-z-]+\/\.github\/workflows\/[a-z-]+\.yml@refs\/heads\/main\z/.match?(identity.to_s)
-_, errors, status = Open3.capture3("cosign", "verify", "--certificate-identity", identity,
-  "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com", reference)
+reference, verifier = ARGV
+valid_reference = /\Aghcr\.io\/boringcache\/(?:base|buildkit)@sha256:[0-9a-f]{64}\z/.match?(reference.to_s)
+keyless = /\Ahttps:\/\/github\.com\/boringcache\/[a-z-]+\/\.github\/workflows\/[a-z-]+\.yml@refs\/heads\/main\z/.match?(verifier.to_s)
+keyed = File.file?(verifier.to_s)
+abort "An immutable image and a checked verifier are required." unless valid_reference && (keyless || keyed)
+arguments = if keyed
+  ["cosign", "verify", "--key", verifier, reference]
+else
+  ["cosign", "verify", "--certificate-identity", verifier,
+    "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com", reference]
+end
+_, errors, status = Open3.capture3(*arguments)
 if status.success?
   puts "verified"
 elsif errors.match?(/no signatures found/i) && !errors.match?(/unauthorized|denied|forbidden|timeout|connection|certificate|no matching signatures/i)
