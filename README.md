@@ -16,13 +16,13 @@ Report security issues privately through
 ## Image
 
 ```text
-ghcr.io/boringcache/buildkit:v0.33.0-bc
+ghcr.io/boringcache/buildkit:v0.33.1-bc
 ```
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.33.0-bc.4` is upstream BuildKit `v0.33.0` plus BoringCache patch release
-  `4`. It retains the managed `type=boringcache` layer-cache path, concurrent
+- `v0.33.1-bc.1` is upstream BuildKit `v0.33.1` plus BoringCache patch release
+  `1`. It retains the managed `type=boringcache` layer-cache path, concurrent
   Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
   retains the tar extraction containment and dependency security fixes, and
   fixes a race between solver request cancellation and finalization. Cache-mount
@@ -33,7 +33,7 @@ Tags follow upstream BuildKit versions with a BoringCache patch suffix:
   Cache mounts can be addressed by their own namespace instead of the layer
   tag, and a namespaced mount is published merge-safely against the snapshot
   the publisher merged.
-- `v0.33.0-bc` is the managed stable channel for the latest signed BoringCache
+- `v0.33.1-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
 
@@ -48,7 +48,7 @@ Release tags correspond to managed BuildKit images for Linux `amd64` and
 Every exact release image is published with provenance/SBOM attestations,
 scanned for HIGH/CRITICAL vulnerabilities, and signed by digest with
 Sigstore/cosign. This public repository signs and verifies the exact image
-digest before promoting `v0.33.0-bc` and `latest` to that digest.
+digest before promoting `v0.33.1-bc` and `latest` to that digest.
 
 The signed Git release tag also records the image tag and immutable digest. The
 signing and verification workflows compare that signed metadata with GHCR before
@@ -57,21 +57,20 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.0-bc.4
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.1-bc.1
 ```
 
-Verify the signature:
+From a checkout of this repository, verify the signature with its release key:
 
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.33.0-bc.4 \
+    ghcr.io/boringcache/buildkit:v0.33.1-bc.1 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
 
 cosign verify \
-  --certificate-identity 'https://github.com/boringcache/buildkit/.github/workflows/sign-image.yml@refs/heads/main' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --key .github/release-cosign-v1.pub \
   "ghcr.io/boringcache/buildkit@${digest}"
 ```

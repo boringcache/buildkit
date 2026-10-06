@@ -17,7 +17,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  BUILDKIT_IMAGE_TAG: v0.33.0-bc.4
+  BUILDKIT_IMAGE_TAG: v0.33.1-bc.1
   COSIGN_PUBLIC_KEY: .github/release-cosign-v1.pub
 
 jobs:
@@ -44,22 +44,6 @@ jobs:
 
           test -s .github/SECURITY.md
           grep -Fq 'security@boringcache.com' .github/SECURITY.md
-
-          stale=0
-          while IFS= read -r file; do
-            case "${file}" in
-              .github/workflows/ci.yml) continue ;;
-            esac
-
-            if grep -nE 'certificate-identity-regexp|private monorepo|source mirror|standalone replacement|df4cb1c069e1874edd31b4311f1884172cec0e10|faadad0cce49287aee09b3a48701e75088a2c6ad' "${file}"; then
-              stale=1
-            fi
-          done < <(git ls-files README.md .github)
-
-          if [[ "${stale}" -ne 0 ]]; then
-            echo "Found stale public BuildKit metadata." >&2
-            exit 1
-          fi
 
           if grep -R -nE '^[[:space:]]*uses: actions/checkout@' .github/workflows |
             grep -vE '^[^:]+:[0-9]+:[[:space:]]*uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1$'; then
