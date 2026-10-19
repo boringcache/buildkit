@@ -21,7 +21,7 @@ ghcr.io/boringcache/buildkit:v0.33.1-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.33.1-bc.3` is upstream BuildKit `v0.33.1` plus BoringCache patch release
+- `v0.33.1-bc.4` is upstream BuildKit `v0.33.1` plus BoringCache patch release
   `3`. It prevents canceled uploads of image metadata after cache export,
   fixes concurrent cache-key snapshots and updates runtime security dependencies.
   It retains the managed `type=boringcache` layer-cache path, concurrent
@@ -59,7 +59,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.1-bc.3
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.1-bc.4
 ```
 
 From a checkout of this repository, verify the signature with its release key:
@@ -67,7 +67,7 @@ From a checkout of this repository, verify the signature with its release key:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.33.1-bc.3 \
+    ghcr.io/boringcache/buildkit:v0.33.1-bc.4 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
