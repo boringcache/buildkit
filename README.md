@@ -4,11 +4,10 @@
 [![Verify BuildKit Image](https://github.com/boringcache/buildkit/actions/workflows/verify-image.yml/badge.svg)](https://github.com/boringcache/buildkit/actions/workflows/verify-image.yml)
 [![Sign BuildKit Image](https://github.com/boringcache/buildkit/actions/workflows/sign-image.yml/badge.svg)](https://github.com/boringcache/buildkit/actions/workflows/sign-image.yml)
 
-This is the public distribution surface for the managed BuildKit image used by
-BoringCache.
-
-The repository is intentionally thin. It tracks image tags, signing,
-verification, and release metadata for the managed image.
+BoringCache provides a managed BuildKit image for shared Docker layer cache,
+persistent cache mounts, and supported tool caches. Use it with the BoringCache
+CLI or GitHub Action. See the [Docker setup guide](https://boringcache.com/docs/adapters/docker)
+for configuration and requirements.
 
 Report security issues privately through
 [GitHub private vulnerability reporting](https://github.com/boringcache/buildkit/security/advisories/new).
@@ -22,7 +21,7 @@ ghcr.io/boringcache/buildkit:v0.33.1-bc
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
 - `v0.33.1-bc.4` is upstream BuildKit `v0.33.1` plus BoringCache patch release
-  `3`. It prevents canceled uploads of image metadata after cache export,
+  `4`. It prevents canceled uploads of image metadata after cache export,
   fixes concurrent cache-key snapshots and updates runtime security dependencies.
   It retains the managed `type=boringcache` layer-cache path, concurrent
   Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
