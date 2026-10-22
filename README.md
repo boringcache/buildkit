@@ -15,13 +15,14 @@ Report security issues privately through
 ## Image
 
 ```text
-ghcr.io/boringcache/buildkit:v0.33.1-bc
+ghcr.io/boringcache/buildkit:v0.34.0-bc
 ```
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.33.1-bc.4` is upstream BuildKit `v0.33.1` plus BoringCache patch release
-  `4`. It prevents canceled uploads of image metadata after cache export,
+- `v0.34.0-bc.1` is upstream BuildKit `v0.34.0` plus BoringCache patch release
+  `1`. It updates Go to 1.27.3 and the CA bundle to reject the compromised
+  eMudhra certificate paths. It prevents canceled uploads of image metadata after cache export,
   fixes concurrent cache-key snapshots and updates runtime security dependencies.
   It retains the managed `type=boringcache` layer-cache path, concurrent
   Bake upload coalescing, and opt-in cache-mount and tool-cache support. It also
@@ -34,7 +35,7 @@ Tags follow upstream BuildKit versions with a BoringCache patch suffix:
   Cache mounts can be addressed by their own namespace instead of the layer
   tag, and a namespaced mount is published merge-safely against the snapshot
   the publisher merged.
-- `v0.33.1-bc` is the managed stable channel for the latest signed BoringCache
+- `v0.34.0-bc` is the managed stable channel for the latest signed BoringCache
   patch release on that upstream base.
 - `latest` moves only when BoringCache promotes a new managed BuildKit image.
 
@@ -49,7 +50,7 @@ Release tags correspond to managed BuildKit images for Linux `amd64` and
 Every exact release image is published with provenance/SBOM attestations,
 scanned for HIGH/CRITICAL vulnerabilities, and signed by digest with
 Sigstore/cosign. This public repository signs and verifies the exact image
-digest before promoting `v0.33.1-bc` and `latest` to that digest.
+digest before promoting `v0.34.0-bc` and `latest` to that digest.
 
 The signed Git release tag also records the image tag and immutable digest. The
 signing and verification workflows compare that signed metadata with GHCR before
@@ -58,7 +59,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.33.1-bc.4
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.1
 ```
 
 From a checkout of this repository, verify the signature with its release key:
@@ -66,7 +67,7 @@ From a checkout of this repository, verify the signature with its release key:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.33.1-bc.4 \
+    ghcr.io/boringcache/buildkit:v0.34.0-bc.1 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"

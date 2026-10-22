@@ -17,7 +17,7 @@ concurrency:
 
 env:
   IMAGE_REPOSITORY: ghcr.io/boringcache/buildkit
-  BUILDKIT_IMAGE_TAG: v0.33.1-bc.4
+  BUILDKIT_IMAGE_TAG: v0.34.0-bc.1
   COSIGN_PUBLIC_KEY: .github/release-cosign-v1.pub
 
 jobs:
