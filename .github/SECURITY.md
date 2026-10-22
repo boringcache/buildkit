@@ -20,8 +20,8 @@ This repository supports the current promoted BoringCache managed BuildKit
 image tags:
 
 - `ghcr.io/boringcache/buildkit:latest`
-- `ghcr.io/boringcache/buildkit:v0.33.1-bc`
-- `ghcr.io/boringcache/buildkit:v0.33.1-bc.4`
+- `ghcr.io/boringcache/buildkit:v0.34.0-bc`
+- `ghcr.io/boringcache/buildkit:v0.34.0-bc.1`
 
 Older tags may be superseded by a new promoted image instead of receiving a
 backport.
