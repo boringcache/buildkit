@@ -20,8 +20,10 @@ ghcr.io/boringcache/buildkit:v0.34.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.34.0-bc.1` is upstream BuildKit `v0.34.0` plus BoringCache patch release
-  `1`. It updates Go to 1.27.3 and the CA bundle to reject the compromised
+- `v0.34.0-bc.2` is upstream BuildKit `v0.34.0` plus BoringCache patch release
+  `2`. It includes license notices and native library source identities, and
+  records load timing for cached build steps. It retains Go 1.27.3 and the
+  CA bundle update that rejects the compromised
   eMudhra certificate paths. It prevents canceled uploads of image metadata after cache export,
   fixes concurrent cache-key snapshots and updates runtime security dependencies.
   It retains the managed `type=boringcache` layer-cache path, concurrent
@@ -59,7 +61,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.1
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.2
 ```
 
 From a checkout of this repository, verify the signature with its release key:
@@ -67,7 +69,7 @@ From a checkout of this repository, verify the signature with its release key:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.34.0-bc.1 \
+    ghcr.io/boringcache/buildkit:v0.34.0-bc.2 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
@@ -76,3 +78,9 @@ cosign verify \
   --key .github/release-cosign-v1.pub \
   "ghcr.io/boringcache/buildkit@${digest}"
 ```
+
+## License
+
+The image contains BuildKit, which is licensed under the Apache License 2.0.
+BoringCache's changes and the `buildkitd` and `buildctl` programs built with
+them are licensed under the Elastic License 2.0. See [LICENSE.md](LICENSE.md).
