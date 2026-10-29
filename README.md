@@ -20,8 +20,10 @@ ghcr.io/boringcache/buildkit:v0.34.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.34.0-bc.2` is upstream BuildKit `v0.34.0` plus BoringCache patch release
-  `2`. It includes license notices and native library source identities, and
+- `v0.34.0-bc.3` is upstream BuildKit `v0.34.0` plus BoringCache patch release
+  `3`. Cache-mount status messages are written to the build log, so build
+  progress no longer marks a starting mount as `done`. A mount is reported as
+  published only after its upload succeeds. It includes license notices and native library source identities, and
   records load timing for cached build steps. It retains Go 1.27.3 and the
   CA bundle update that rejects the compromised
   eMudhra certificate paths. It prevents canceled uploads of image metadata after cache export,
@@ -61,7 +63,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.2
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.3
 ```
 
 From a checkout of this repository, verify the signature with its release key:
@@ -69,7 +71,7 @@ From a checkout of this repository, verify the signature with its release key:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.34.0-bc.2 \
+    ghcr.io/boringcache/buildkit:v0.34.0-bc.3 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
