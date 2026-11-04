@@ -20,10 +20,20 @@ ghcr.io/boringcache/buildkit:v0.34.0-bc
 
 Tags follow upstream BuildKit versions with a BoringCache patch suffix:
 
-- `v0.34.0-bc.3` is upstream BuildKit `v0.34.0` plus BoringCache patch release
-  `3`. Cache-mount status messages are written to the build log, so build
-  progress no longer marks a starting mount as `done`. A mount is reported as
-  published only after its upload succeeds. It includes license notices and native library source identities, and
+- `v0.34.0-bc.4` is upstream BuildKit `v0.34.0` plus BoringCache patch release
+  `4`. Symlink permissions no longer change cache keys, so a build context
+  checked out on macOS reuses layers built on Linux from the same files. Link
+  targets, file contents and regular-file permissions still change the key.
+  Files transferred from a local build context keep their capabilities and
+  set-ID bits, and a cached result that lost them is not reused. Warm builds
+  send only the context files whose size, modification time, mode, owner,
+  group or link target changed, as in upstream BuildKit. A builder that ran an
+  earlier image sends its context once after the upgrade. It retains the
+  cache-mount status messages in the build log: build progress does not mark a
+  starting mount as `done`, and a mount is reported as published only after
+  its upload succeeds. Its binaries use golang.org/x/net 0.62.0 and a
+  golang.org/x/crypto revision without the deprecated openpgp packages. It
+  includes license notices and native library source identities, and
   records load timing for cached build steps. It retains Go 1.27.3 and the
   CA bundle update that rejects the compromised
   eMudhra certificate paths. It prevents canceled uploads of image metadata after cache export,
@@ -63,7 +73,7 @@ trusting the image.
 Inspect the image:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.3
+docker buildx imagetools inspect ghcr.io/boringcache/buildkit:v0.34.0-bc.4
 ```
 
 From a checkout of this repository, verify the signature with its release key:
@@ -71,7 +81,7 @@ From a checkout of this repository, verify the signature with its release key:
 ```sh
 digest="$(
   docker buildx imagetools inspect \
-    ghcr.io/boringcache/buildkit:v0.34.0-bc.3 \
+    ghcr.io/boringcache/buildkit:v0.34.0-bc.4 \
     --format '{{json .Manifest.Digest}}' |
     jq -r .
 )"
